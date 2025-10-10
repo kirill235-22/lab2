@@ -500,7 +500,6 @@ class Board{
 
         //вывод доски
         void drawBoard(){
-            printActive();
             for (int y=7; y>=0; y--){
                 cout << y+1;
                 for (int x=0; x<=7; x++){
@@ -605,9 +604,8 @@ class Board{
             else activeColor = color::white; 
         }
 
-        void printActive(){
-            if (activeColor == color::white) cout << "white" << endl;
-            else cout << "black" << endl; 
+        color getActive(){
+             return activeColor;
         }
 
         bool checkOwner(coordinates pos){
@@ -676,21 +674,102 @@ class Timer{
 
 };
 
+class Player{
+    private:
+        string _name;
+        int _wonGames;
+        int _lostGames;
+        int _playedGames;
+
+    public:
+        Player(string name): _name(name){
+            clearStats();
+        }
+
+        void clearStats(){
+            _wonGames = 0;
+            _lostGames = 0;
+            _playedGames = 0;
+        }
+
+        void setName(string name){
+            _name = name;
+        }
+
+        string getName(){
+            return _name;
+        }
+
+        void incWonGames(){
+            _wonGames++;
+            _playedGames++;
+        }
+
+        void incLostGames(){
+            _lostGames++;
+            _playedGames++;
+        }
+
+        int getWonGames(){
+            return _wonGames;
+        }
+
+        int getLostGames(){
+            return _lostGames;
+        }
+
+        int getPlayedGames(){
+            return _playedGames;
+        }
+
+        void printStats(){
+            cout << "Имя: " << getName() << endl;
+            cout << "Кол-во побед: " << getWonGames() << endl;
+            cout << "Кол-во поражений: " << getLostGames() << endl;
+            cout << "Всего игр: " << getPlayedGames() << endl;
+        }
+};
+
 class Game{
     private:
-        string whitePlayer;
-        string blackPlayer;
+        Player *whitePlayer;
+        Player *blackPlayer;
         Board *board;
         Timer *timer;
 
     public:
-        Game(): board(new Board()){};
+        Game(): board(new Board()){
+            string name1, name2;
+            cout << "Введите имя 1 игрока: ";
+            cin >> name1;
+
+            cout << "Введите имя 2 игрока: ";
+            cin >> name2;
+
+            whitePlayer = new Player(name1);
+            blackPlayer = new Player(name2);
+        };
+
+        void printResults(){
+            whitePlayer->printStats();
+            cout << endl;
+            blackPlayer->printStats();
+            cout << endl;
+            timer->printTime();
+        }
+
+        void printActive(){
+            color active = board->getActive();
+            if (active == color::white) cout << "white: " << whitePlayer->getName() << endl;
+            else cout << "black: " << blackPlayer->getName() << endl;
+        }
 
         void play(){
             timer = new Timer();
             bool stop = false, prevWrong = false;
             do{
                 system("clear");
+                printActive();
                 board->drawBoard();
                 if (prevWrong) cout << "Ошибка" << endl;
                 string s1;
@@ -714,9 +793,10 @@ class Game{
                 else prevWrong = true;
             }while (!stop);
             timer->stopTimer();
-            timer->printTime();
+            printResults();
         }
 };
+
 
 int main(){
     Game *chess = new Game();
