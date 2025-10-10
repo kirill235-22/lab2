@@ -639,7 +639,65 @@ class Board{
 
 };
 
+coordinates convert(string& str){
+    int x, y;
+    if (str.length() == 2){
+        x = toupper(str[0])-65;
+        y = str[1]-49;
+        if (x>=0 && x<=7 && y>=0 && y<=7)
+            return coordinates(x,y);
+        return coordinates(-1,-1);
+    }
+    return coordinates(8, 8);
+}
+
+class Game{
+    private:
+        color activeColor;
+        string whitePlayer;
+        string blackPlayer;
+        Board* board;
+
+    public:
+        Game(): board(new Board()){};
+
+        void play(){
+            bool stop = false, prevWrong = false;
+            do{
+                system("clear");
+                board->drawBoard();
+                if (prevWrong) cout << "Ошибка" << endl;
+                string s1;
+                cin >> s1;
+                coordinates c1 = convert(s1);
+                if (c1.checkBound()){
+                    if (board->sqHasPiece(c1) && board->checkOwner(c1)){
+                        bool hasMoves = board->drawMoves(c1);
+                        board->getSqPiece(c1)->printStats();
+                        if (hasMoves){
+                            string s2;
+                            cin >> s2;
+                            coordinates c2 = convert(s2);
+                            if (c2.checkBound())
+                                board->movePiece(c1, c2);
+                                
+                        }
+                    }
+                }
+                else if (s1=="exit") stop = true;
+                else prevWrong = true;
+            }while (!stop);
+        }
+};
+
 int main(){
+    /* Game *chess = new Game();
+    chess->play(); */
     Piece *pawn = new Pawn();
     pawn->printStats();
+
+    Piece *pawn1 = new Pawn(coordinates(1,2), color::black);
+    pawn1->printStats();
+    pawn1->setDead();
+    pawn1->printStats();
 }
