@@ -464,6 +464,181 @@ class Square{
 
 };
 
+class Board{
+    private:
+        color activeColor;
+        pieceType scheme[4][8] = {
+            {pieceType::rook, pieceType::knight, pieceType::bishop, pieceType::queen, pieceType::king, pieceType::bishop, pieceType::knight, pieceType::rook},
+            {pieceType::pawn, pieceType::pawn, pieceType::pawn, pieceType::pawn, pieceType::pawn, pieceType::pawn, pieceType::pawn, pieceType::pawn, },
+            {pieceType::pawn, pieceType::pawn, pieceType::pawn, pieceType::pawn, pieceType::pawn, pieceType::pawn, pieceType::pawn, pieceType::pawn, },
+            {pieceType::rook, pieceType::knight, pieceType::bishop, pieceType::king, pieceType::queen, pieceType::bishop, pieceType::knight, pieceType::rook},
+        };
+
+        Square* board[8][8];
+
+    public:
+        //Стандартный конструктор
+        Board(): activeColor(color::white){
+            initBoard();
+        }
+
+        //инициализация доски
+        void initBoard(){
+            for (int y=0; y<=7; y++){
+                for (int x=0; x<=7; x++){
+                    if (y<=1){
+                        board[x][y]=new Square(coordinates(x, y), scheme[y][x], color::white);
+                    }
+                    else if (y>=6){
+                        board[x][y]=new Square(coordinates(x, y), scheme[y-4][x], color::black);
+                    }
+                    else
+                        board[x][y]=new Square(coordinates(x, y));
+                }
+            }
+        }
+
+        //вывод доски
+        void drawBoard(){
+            printActive();
+            for (int y=7; y>=0; y--){
+                cout << y+1;
+                for (int x=0; x<=7; x++){
+                    if (board[x][y]->getPiece()!=nullptr){
+                        switch (board[x][y]->getPiece()->getType()){
+                            case pieceType::pawn:
+                                if (board[x][y]->getPiece()->getColor()==color::white)
+                                    cout << u8"|\u2659 ";
+                                else cout << u8"|\u265F ";
+                                break;
+                                
+                            case pieceType::rook:
+                                if (board[x][y]->getPiece()->getColor()==color::white)
+                                    cout << u8"|\u2656 ";
+                                else cout << u8"|\u265C ";
+                                break;
+
+                            case pieceType::knight:
+                                if (board[x][y]->getPiece()->getColor()==color::white)
+                                    cout << u8"|\u2658 ";
+                                else cout << u8"|\u265E ";
+                                break;
+
+                            case pieceType::bishop:
+                                if (board[x][y]->getPiece()->getColor()==color::white)
+                                    cout << u8"|\u2657 ";
+                                else cout << u8"|\u265D ";
+                                break;
+
+                            case pieceType::king:
+                                if (board[x][y]->getPiece()->getColor()==color::white)
+                                    cout << u8"|\u2654 ";
+                                else cout << u8"|\u265A ";
+                                break;
+
+                            case pieceType::queen:
+                                if (board[x][y]->getPiece()->getColor()==color::white)
+                                    cout << u8"|\u2655 ";
+                                else cout << u8"|\u265B ";
+                                break;
+
+                            default:
+                                cout << " ";
+                                break;
+                        }
+                    }
+                    else
+                        cout << "|  ";
+                }
+                cout << "|" << endl;
+            }
+            cout << "  A  B  C  D  E  F  G  H" << endl;
+        }
+
+        //отображение ходов фигуры
+        bool drawMoves(coordinates pos){
+            vector<coordinates> moves = getMoves(pos);
+            if (!moves.empty()){
+                for (int y=7; y>=0; y--){
+                    cout << y+1;
+                    for (int x=0; x<=7; x++){
+                        bool found = false;
+                        for (coordinates a : moves){
+                            if (a==coordinates(x,y)){
+                                cout << "| *";
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (!found) cout << "|  ";
+                    }
+                    cout << "|" << endl;
+                }
+                cout << "  A  B  C  D  E  F  G  H" << endl;
+                return true;
+            }
+            return false;
+        }
+
+        vector<coordinates> getMoves(coordinates pos){
+            return board[pos.getX()][pos.getY()]->getMoves(board, activeColor);
+        }
+
+        Square* getSquare(coordinates pos){
+            return board[pos.getX()][pos.getY()];
+        }
+
+        //проверка наличия фигуры на клетке
+        bool sqHasPiece(coordinates pos){
+            if (getSqPiece(pos)!=nullptr)
+                return true;
+            return false;
+        }
+
+        //получение фигуры на клетке
+        Piece* getSqPiece(coordinates pos){
+            return board[pos.getX()][pos.getY()]->getPiece();
+        }
+
+        void changeActive(){
+            if (activeColor == color::white) activeColor = color::black;
+            else activeColor = color::white; 
+        }
+
+        void printActive(){
+            if (activeColor == color::white) cout << "white" << endl;
+            else cout << "black" << endl; 
+        }
+
+        bool checkOwner(coordinates pos){
+            if (getSqPiece(pos)->getColor() == activeColor) return true;
+            else return false;
+        }
+
+        void movePiece(coordinates c1, coordinates c2){
+            if (!sqHasPiece(c1)){
+                cout << "Поле пустое" << endl;
+                return;
+            }
+            vector<coordinates> moves = getMoves(c1);
+            bool found = false;
+            for (coordinates a : moves){
+                if (a==c2){
+                    found = true;
+                    break;
+                }
+            }
+            if (found){
+                getSqPiece(c1)->incMoves();
+                getSquare(c2)->setPiece(getSqPiece(c1));
+                getSquare(c1)->removePiece();
+                changeActive();
+            }
+            else cout << "Фигура не может сюда пойти" << endl;
+        }
+
+};
+
 int main(){
     Piece *pawn = new Pawn();
     pawn->printStats();
