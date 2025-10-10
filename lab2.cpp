@@ -182,7 +182,7 @@ class Piece{
         }
 };
 
-class Pawn : public Piece{
+class Pawn: public Piece{
     private:
         vector<coordinates> firstPattern = {
             coordinates(0, 1), coordinates(0, 2), coordinates(-1, 1), coordinates(1, 1)
@@ -202,7 +202,7 @@ class Pawn : public Piece{
         }
 };
 
-class Bishop : public Piece{
+class Bishop: public Piece{
     private:
         vector<coordinates> pattern ={
             coordinates(-1,1), coordinates(1,1),
@@ -240,7 +240,7 @@ class King: public Piece{
         }
 };
 
-class Knight : public Piece{
+class Knight: public Piece{
     private:
         vector<coordinates> pattern = {
             coordinates(-1,2), coordinates(1,2),
@@ -651,17 +651,43 @@ coordinates convert(string& str){
     return coordinates(8, 8);
 }
 
+class Timer{
+    private:
+        time_t startTime;
+        tm *gameTime;
+
+    public:
+        Timer(){
+            startTimer();
+        }
+        
+        void startTimer(){
+            startTime = time(NULL);
+        }
+
+        void stopTimer(){
+            time_t tmp = difftime(time(NULL), startTime);
+            gameTime = localtime(&tmp);
+        }
+
+        void printTime(){
+            cout << "Время игры: " << gameTime->tm_hour << ":" << gameTime->tm_min << ":" << gameTime->tm_sec << endl;
+        }
+
+};
+
 class Game{
     private:
-        color activeColor;
         string whitePlayer;
         string blackPlayer;
-        Board* board;
+        Board *board;
+        Timer *timer;
 
     public:
         Game(): board(new Board()){};
 
         void play(){
+            timer = new Timer();
             bool stop = false, prevWrong = false;
             do{
                 system("clear");
@@ -687,17 +713,19 @@ class Game{
                 else if (s1=="exit") stop = true;
                 else prevWrong = true;
             }while (!stop);
+            timer->stopTimer();
+            timer->printTime();
         }
 };
 
 int main(){
-    /* Game *chess = new Game();
-    chess->play(); */
-    Piece *pawn = new Pawn();
+    Game *chess = new Game();
+    chess->play();
+    /* Piece *pawn = new Pawn();
     pawn->printStats();
 
     Piece *pawn1 = new Pawn(coordinates(1,2), color::black);
     pawn1->printStats();
     pawn1->setDead();
-    pawn1->printStats();
+    pawn1->printStats(); */
 }
