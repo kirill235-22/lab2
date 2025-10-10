@@ -156,6 +156,95 @@ class Pawn : public Piece{
         }
 };
 
+class Bishop : public Piece{
+    private:
+        vector<coordinates> pattern ={
+            coordinates(-1,1), coordinates(1,1),
+            coordinates(-1,-1), coordinates(1,-1),
+        };
+
+    public:
+        Bishop(): Piece(pieceType::bishop){};
+        Bishop(coordinates pos, color col): Piece(pos, col, pieceType::bishop){};
+
+        vector<coordinates> getPattern() override{
+            return pattern;
+        }
+};
+
+class King: public Piece{
+    private:
+        vector<coordinates> pattern ={
+            coordinates(-1,1), coordinates(0,1), coordinates(1,1),
+            coordinates(-1,0), coordinates(1,0),
+            coordinates(-1,-1), coordinates(0,-1), coordinates(1,-1)
+        };
+
+        vector<coordinates> bishopThreat ={
+            coordinates(-1,1), coordinates(1,1),
+            coordinates(-1,-1), coordinates(1,-1),
+        };
+
+    public:
+        King(): Piece(pieceType::king){};
+        King(coordinates pos, color col): Piece(pos, col, pieceType::king){};
+
+        vector<coordinates> getPattern() override{
+            return pattern;
+        }
+};
+
+class Knight : public Piece{
+    private:
+        vector<coordinates> pattern = {
+            coordinates(-1,2), coordinates(1,2),
+            coordinates(2,1), coordinates(2,-1),
+            coordinates(1,-2), coordinates(-1,-2),
+            coordinates(-2,-1), coordinates(-2,1)
+        };
+
+    public:
+        Knight(): Piece(pieceType::knight){};
+        Knight(coordinates pos, color col): Piece(pos, col, pieceType::knight){};
+
+        vector<coordinates> getPattern() override{
+            return pattern;
+        }
+};
+
+class Queen: public Piece{
+    private:
+        vector<coordinates> pattern ={
+            coordinates(-1,1), coordinates(0,1), coordinates(1,1),
+            coordinates(-1,0), coordinates(1,0),
+            coordinates(-1,-1), coordinates(0,-1), coordinates(1,-1)
+        };
+
+    public:
+        Queen(): Piece(pieceType::queen){};
+        Queen(coordinates pos, color col): Piece(pos, col, pieceType::queen){};
+
+        vector<coordinates> getPattern() override{
+            return pattern;
+        }
+};
+
+class Rook: public Piece{
+    private:
+        vector<coordinates> pattern ={
+            coordinates(0,1), coordinates(1,0),
+            coordinates(-1,0), coordinates(0,-1),
+        };
+
+    public:
+        Rook(): Piece(pieceType::rook){};
+        Rook(coordinates pos, color col): Piece(pos, col, pieceType::rook){};
+
+        vector<coordinates> getPattern() override{
+            return pattern;
+        }
+};
+
 int main(){
     Piece *pawn = new Pawn();
     pawn->printStats();
