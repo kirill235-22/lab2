@@ -3,6 +3,9 @@
 
 using namespace std;
 
+#define BOARD_MAX_X 7
+#define BOARD_MAX_Y 7
+
 struct coordinates{
     private:
         int x;
@@ -14,6 +17,49 @@ struct coordinates{
 
         int getX() { return x; }; //получение координаты X
         int getY() { return y; }; //получение координаты Y
+
+        coordinates operator+(const coordinates& coord) const{
+            int x, y;
+            x = this->x + coord.x;
+            y = this->y + coord.y;
+            return coordinates(x, y);
+        }
+
+        //перегрузка операции -
+        coordinates operator-(const coordinates& coord) const{
+            int x, y;
+            x = this->x - coord.x;
+            y = this->y - coord.y;
+            return coordinates(x, y);
+        }
+
+        //перегрузка оператора *
+        coordinates operator* (const int& n) const{
+            int x, y;
+            x = this->x * n;
+            y = this->y * n;
+            return coordinates(x,y);
+        }
+
+        //перегрузка операции ==
+        bool operator==(const coordinates& coord) const{
+            if (x == coord.x && y == coord.y)
+                return true;
+            return false;
+        }
+
+        coordinates& operator+=(const coordinates coord){
+            x += coord.x;
+            y += coord.y;
+            return *this;
+        }
+
+        //проверка принадлежности координат доске
+        bool checkBound(){
+            if (x < 0 || x > BOARD_MAX_X || y < 0 || y > BOARD_MAX_Y)
+                return false;
+            return true;
+        }
 };
 
 //типы фигур
