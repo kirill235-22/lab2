@@ -6,62 +6,66 @@ using namespace std;
 #define BOARD_MAX_X 7
 #define BOARD_MAX_Y 7
 
+//координаты клетки/фигуры
 struct coordinates{
     private:
-        int x;
-        int y;
+        int _x; //координата x
+        int _y; //координата y
 
     public:
-        coordinates(): x(0), y(0){}
-        coordinates(int _x, int _y): x(_x), y(_y){}
+        coordinates(): _x(0), _y(0){}
+        coordinates(int x, int y): _x(x), _y(y){}
 
-        int getX() { return x; }; //получение координаты X
-        int getY() { return y; }; //получение координаты Y
+        int getX() { return _x; }; //получение координаты X
+        int getY() { return _y; }; //получение координаты Y
 
+        //перегрузка оператора +
         coordinates operator+(const coordinates& coord) const{
             int x, y;
-            x = this->x + coord.x;
-            y = this->y + coord.y;
+            x = this->_x + coord._x;
+            y = this->_y + coord._y;
             return coordinates(x, y);
         }
 
-        //перегрузка операции -
+        //перегрузка оператора -
         coordinates operator-(const coordinates& coord) const{
             int x, y;
-            x = this->x - coord.x;
-            y = this->y - coord.y;
+            x = this->_x - coord._x;
+            y = this->_y - coord._y;
             return coordinates(x, y);
         }
 
         //перегрузка оператора *
         coordinates operator* (const int& n) const{
             int x, y;
-            x = this->x * n;
-            y = this->y * n;
+            x = this->_x * n;
+            y = this->_y * n;
             return coordinates(x,y);
         }
 
-        //перегрузка операции ==
+        //перегрузка оператора ==
         bool operator==(const coordinates& coord) const{
-            if (x == coord.x && y == coord.y)
+            if (this->_x == coord._x && this->_y == coord._y)
                 return true;
             return false;
         }
 
+        //перегрузка оператора +=
         coordinates& operator+=(const coordinates coord){
-            x += coord.x;
-            y += coord.y;
+            this->_x += coord._x;
+            this->_y += coord._y;
             return *this;
         }
 
         //проверка принадлежности координат доске
         bool checkBound(){
-            if (x < 0 || x > BOARD_MAX_X || y < 0 || y > BOARD_MAX_Y)
+            if (this->_x < 0 || this->_x > BOARD_MAX_X || this->_y < 0 || this->_y > BOARD_MAX_Y)
                 return false;
             return true;
         }
 };
 
+//преобразование строки в координаты
 coordinates convert(string& str){
     int x, y;
     if (str.length() == 2){
@@ -74,6 +78,7 @@ coordinates convert(string& str){
     return coordinates(8, 8);
 }
 
+//преобразование координат в строку
 string toString(coordinates coor){
     string a;
     a += coor.getX()+65;
@@ -97,14 +102,14 @@ enum class color{
     white //белый
 };
 
+//Класс Фигура
 class Piece{
     private:
-        vector<coordinates> pattern;
         bool _isAlive = true; //состояние
         color _color; //цвет
         pieceType _type; //тип
         coordinates _pos; //координаты
-        int _moves = 0;
+        int _moves = 0; //кол-во ходов фигуры
 
     public:
         Piece(pieceType type): _pos(coordinates(0,0)), _color(color::white), _type(type){};
@@ -115,19 +120,23 @@ class Piece{
             _pos = pos;
         }
 
+        //добавить ход
         void incMoves(){
             _moves++;
         }
 
+        //получить ходы
         int getMoves(){
             return _moves;
         }
 
+        //проверка передвижения
         bool isMoved(){
             if (_moves > 0) return true;
             return false;
         }
 
+        //получение шаблона передвижения
         virtual vector<coordinates> getPattern() = 0;
 
         //получение координаты фигуры
@@ -152,10 +161,12 @@ class Piece{
             _isAlive = false;
         }
 
+        //проверка состояния
         bool isAlive(){
             return _isAlive;
         }
 
+        //вывод информации
         void printInfo(){
             string type, color;
             switch (getType()){
@@ -201,115 +212,123 @@ class Piece{
         }
 };
 
+//Класс Пешка
 class Pawn: public Piece{
     private:
-        vector<coordinates> firstPattern = {
+        vector<coordinates> _firstPattern = {
             coordinates(0, 1), coordinates(0, 2), coordinates(-1, 1), coordinates(1, 1)
-        };
+        }; //шаблон первого хода
         
-        vector<coordinates> pattern = {
+        vector<coordinates> _pattern = {
             coordinates(0, 1), coordinates(-1, 1), coordinates(1, 1)
-        };
+        }; //шаблон хода, кроме первого
 
     public:
         Pawn(): Piece(pieceType::pawn){}
         Pawn(coordinates pos, color col): Piece(pos, col, pieceType::pawn){}
         
+        //получение шаблона передвижения
         vector<coordinates> getPattern() override{
-            if (isMoved()) return pattern;
-            else return firstPattern;
+            if (isMoved()) return _pattern;
+            else return _firstPattern;
         }
 };
 
+//Класс Слон
 class Bishop: public Piece{
     private:
-        vector<coordinates> pattern ={
+        vector<coordinates> _pattern ={
             coordinates(-1,1), coordinates(1,1),
             coordinates(-1,-1), coordinates(1,-1),
-        };
+        }; //шаблон хода
 
     public:
         Bishop(): Piece(pieceType::bishop){};
         Bishop(coordinates pos, color col): Piece(pos, col, pieceType::bishop){};
 
+        //получение шаблона передвижения
         vector<coordinates> getPattern() override{
-            return pattern;
+            return _pattern;
         }
 };
 
+//Класс Король
 class King: public Piece{
     private:
-        vector<coordinates> pattern ={
+        vector<coordinates> _pattern ={
             coordinates(-1,1), coordinates(0,1), coordinates(1,1),
             coordinates(-1,0), coordinates(1,0),
             coordinates(-1,-1), coordinates(0,-1), coordinates(1,-1)
-        };
-
-        vector<coordinates> bishopThreat ={
-            coordinates(-1,1), coordinates(1,1),
-            coordinates(-1,-1), coordinates(1,-1),
-        };
+        }; //шаблон хода фигуры
 
     public:
         King(): Piece(pieceType::king){};
         King(coordinates pos, color col): Piece(pos, col, pieceType::king){};
 
+        //получение шаблона передвижения
         vector<coordinates> getPattern() override{
-            return pattern;
+            return _pattern;
         }
 };
 
+//Класс Конь
 class Knight: public Piece{
     private:
-        vector<coordinates> pattern = {
+        vector<coordinates> _pattern = {
             coordinates(-1,2), coordinates(1,2),
             coordinates(2,1), coordinates(2,-1),
             coordinates(1,-2), coordinates(-1,-2),
             coordinates(-2,-1), coordinates(-2,1)
-        };
+        }; //шаблон хода фигуры
 
     public:
         Knight(): Piece(pieceType::knight){};
         Knight(coordinates pos, color col): Piece(pos, col, pieceType::knight){};
 
+        //получение шаблона передвижения
         vector<coordinates> getPattern() override{
-            return pattern;
+            return _pattern;
         }
 };
 
+//Класс Ферзь
 class Queen: public Piece{
     private:
-        vector<coordinates> pattern ={
+        vector<coordinates> _pattern ={
             coordinates(-1,1), coordinates(0,1), coordinates(1,1),
             coordinates(-1,0), coordinates(1,0),
             coordinates(-1,-1), coordinates(0,-1), coordinates(1,-1)
-        };
+        }; //шаблон хода фигуры
 
     public:
         Queen(): Piece(pieceType::queen){};
         Queen(coordinates pos, color col): Piece(pos, col, pieceType::queen){};
 
+        //получение шаблона передвижения
         vector<coordinates> getPattern() override{
-            return pattern;
+            return _pattern;
         }
 };
 
+//Класс Ладья
 class Rook: public Piece{
     private:
-        vector<coordinates> pattern ={
+        vector<coordinates> _pattern ={
             coordinates(0,1), coordinates(1,0),
             coordinates(-1,0), coordinates(0,-1),
-        };
+        }; //шаблон хода фигуры
 
     public:
         Rook(): Piece(pieceType::rook){};
         Rook(coordinates pos, color col): Piece(pos, col, pieceType::rook){};
 
+        //получение шаблона передвижения
         vector<coordinates> getPattern() override{
-            return pattern;
+            return _pattern;
         }
 };
 
+//Класс Клетка
 class Square{
     private:
         Piece* _piece; //фигура на клетке
@@ -372,18 +391,22 @@ class Square{
             _piece = nullptr;
         }
 
+        //получить цвет фигуры
         color getPieceColor(){
             return _piece->getColor();
         }
 
+        //получить тип фигуры
         pieceType getPieceType(){
             return _piece->getType();
         }
 
+        //получить шаблон хода фигуры
         vector<coordinates> getPiecePattern(){
             return _piece->getPattern();
         }
 
+        //проверить наличие фигуры на клетке
         bool hasPiece(){
             if (getPiece()!=nullptr) return true;
             return false;
@@ -414,6 +437,7 @@ class Square{
             return moves;
         }
 
+        //получить продолжительные ходы
         vector<coordinates> getContMoves(Square* board[8][8], color active){
             vector<coordinates> moves, pattern;
             coordinates pos = getPos();
@@ -440,6 +464,7 @@ class Square{
             return moves;
         }
 
+        //получить короткие ходы
         vector<coordinates> getShortMoves(Square* board[8][8], color active){
             vector<coordinates> moves, pattern;
             coordinates pos = getPos();
@@ -454,6 +479,7 @@ class Square{
             return moves;
         }
         
+        //получить ходы пешки
         vector<coordinates> getPawnMoves(Square* board[8][8], color active){
             vector<coordinates> moves, pattern;
             coordinates pos = getPos(), tpos, forward;
@@ -481,27 +507,28 @@ class Square{
             return moves;
         }
 
+        //вывод информации о клетке и фигуре, стоящей на ней
         void printInfo(){
             cout << "Клетка " << toString(getPos()) << endl;
             getPiece()->printInfo();
         }
 };
 
+//Класс Доска
 class Board{
     private:
-        color activeColor;
-        pieceType scheme[4][8] = {
+        color _activeColor; //текущий цвет
+        pieceType _scheme[4][8] = {
             {pieceType::rook, pieceType::knight, pieceType::bishop, pieceType::queen, pieceType::king, pieceType::bishop, pieceType::knight, pieceType::rook},
             {pieceType::pawn, pieceType::pawn, pieceType::pawn, pieceType::pawn, pieceType::pawn, pieceType::pawn, pieceType::pawn, pieceType::pawn, },
             {pieceType::pawn, pieceType::pawn, pieceType::pawn, pieceType::pawn, pieceType::pawn, pieceType::pawn, pieceType::pawn, pieceType::pawn, },
             {pieceType::rook, pieceType::knight, pieceType::bishop, pieceType::king, pieceType::queen, pieceType::bishop, pieceType::knight, pieceType::rook},
-        };
+        }; //шаблон заполнения доски
 
-        Square* board[8][8];
+        Square* _board[8][8]; //доска
 
     public:
-        //Стандартный конструктор
-        Board(): activeColor(color::white){
+        Board(): _activeColor(color::white){
             initBoard();
         }
 
@@ -510,13 +537,13 @@ class Board{
             for (int y=0; y<=7; y++){
                 for (int x=0; x<=7; x++){
                     if (y<=1){
-                        board[x][y]=new Square(coordinates(x, y), scheme[y][x], color::white);
+                        _board[x][y]=new Square(coordinates(x, y), _scheme[y][x], color::white);
                     }
                     else if (y>=6){
-                        board[x][y]=new Square(coordinates(x, y), scheme[y-4][x], color::black);
+                        _board[x][y]=new Square(coordinates(x, y), _scheme[y-4][x], color::black);
                     }
                     else
-                        board[x][y]=new Square(coordinates(x, y));
+                        _board[x][y]=new Square(coordinates(x, y));
                 }
             }
         }
@@ -526,40 +553,40 @@ class Board{
             for (int y=7; y>=0; y--){
                 cout << y+1;
                 for (int x=0; x<=7; x++){
-                    if (board[x][y]->getPiece()!=nullptr){
-                        switch (board[x][y]->getPiece()->getType()){
+                    if (_board[x][y]->getPiece()!=nullptr){
+                        switch (_board[x][y]->getPiece()->getType()){
                             case pieceType::pawn:
-                                if (board[x][y]->getPiece()->getColor()==color::white)
+                                if (_board[x][y]->getPiece()->getColor()==color::white)
                                     cout << u8"|\u2659 ";
                                 else cout << u8"|\u265F ";
                                 break;
                                 
                             case pieceType::rook:
-                                if (board[x][y]->getPiece()->getColor()==color::white)
+                                if (_board[x][y]->getPiece()->getColor()==color::white)
                                     cout << u8"|\u2656 ";
                                 else cout << u8"|\u265C ";
                                 break;
 
                             case pieceType::knight:
-                                if (board[x][y]->getPiece()->getColor()==color::white)
+                                if (_board[x][y]->getPiece()->getColor()==color::white)
                                     cout << u8"|\u2658 ";
                                 else cout << u8"|\u265E ";
                                 break;
 
                             case pieceType::bishop:
-                                if (board[x][y]->getPiece()->getColor()==color::white)
+                                if (_board[x][y]->getPiece()->getColor()==color::white)
                                     cout << u8"|\u2657 ";
                                 else cout << u8"|\u265D ";
                                 break;
 
                             case pieceType::king:
-                                if (board[x][y]->getPiece()->getColor()==color::white)
+                                if (_board[x][y]->getPiece()->getColor()==color::white)
                                     cout << u8"|\u2654 ";
                                 else cout << u8"|\u265A ";
                                 break;
 
                             case pieceType::queen:
-                                if (board[x][y]->getPiece()->getColor()==color::white)
+                                if (_board[x][y]->getPiece()->getColor()==color::white)
                                     cout << u8"|\u2655 ";
                                 else cout << u8"|\u265B ";
                                 break;
@@ -603,12 +630,14 @@ class Board{
             return false;
         }
 
+        //получение ходов фигуры по координатам
         vector<coordinates> getMoves(coordinates pos){
-            return board[pos.getX()][pos.getY()]->getMoves(board, activeColor);
+            return getSquare(pos)->getMoves(_board, _activeColor);
         }
 
+        //получение клетки по координатам
         Square* getSquare(coordinates pos){
-            return board[pos.getX()][pos.getY()];
+            return _board[pos.getX()][pos.getY()];
         }
 
         //проверка наличия фигуры на клетке
@@ -620,23 +649,27 @@ class Board{
 
         //получение фигуры на клетке
         Piece* getSqPiece(coordinates pos){
-            return board[pos.getX()][pos.getY()]->getPiece();
+            return getSquare(pos)->getPiece();
         }
 
+        //смена текущего цвета
         void changeActive(){
-            if (activeColor == color::white) activeColor = color::black;
-            else activeColor = color::white; 
+            if (_activeColor == color::white) _activeColor = color::black;
+            else _activeColor = color::white; 
         }
 
+        //получение текущего цвета
         color getActive(){
-             return activeColor;
+            return _activeColor;
         }
 
+        //проверка возможность сдвинуть выбранную фигуру
         bool checkOwner(coordinates pos){
-            if (getSqPiece(pos)->getColor() == activeColor) return true;
+            if (getSqPiece(pos)->getColor() == getActive()) return true;
             else return false;
         }
 
+        //передвижение фигур
         int movePiece(coordinates c1, coordinates c2){
             int state = 0;
             if (!sqHasPiece(c1)){
@@ -652,7 +685,7 @@ class Board{
             }
             if (found){
                 if (sqHasPiece(c2) && getSqPiece(c2)->getType() == pieceType::king){
-                    if (activeColor == color::white) state = 1;
+                    if (getActive() == color::white) state = 1;
                     else state = 2;
                 }
                 getSqPiece(c1)->incMoves();
@@ -666,79 +699,92 @@ class Board{
 
 };
 
+//Класс Таймер
 class Timer{
     private:
-        time_t startTime;
-        tm *gameTime;
+        time_t startTime; //время начала игры
+        tm *gameTime; //длительность игры
 
     public:
         Timer(){
             startTimer();
         }
         
+        //запуск таймера
         void startTimer(){
             startTime = time(NULL);
         }
 
+        //остановка таймера
         void stopTimer(){
             time_t tmp = difftime(time(NULL), startTime);
             gameTime = localtime(&tmp);
         }
 
+        //вывод продолжительности игры
         void printTime(){
             cout << "Время игры: " << gameTime->tm_hour-7 << ":" << gameTime->tm_min << ":" << gameTime->tm_sec << endl;
         }
-
 };
 
+//Класс Игрок
 class Player{
     private:
-        string _name;
-        int _wonGames;
-        int _lostGames;
-        int _playedGames;
+        string _name; //имя
+        int _wonGames; //кол-во побед
+        int _lostGames; //кол-во поражений
+        int _playedGames; //кол-во игр
 
     public:
         Player(string name): _name(name){
             clearStats();
         }
 
+        //очистка статистики игрока
         void clearStats(){
             _wonGames = 0;
             _lostGames = 0;
             _playedGames = 0;
         }
 
+        //установка имени игрока
         void setName(string name){
             _name = name;
         }
 
+        //получение имени игрока
         string getName(){
             return _name;
         }
 
+        //добавление выигранной игры
         void incWonGames(){
             _wonGames++;
             _playedGames++;
         }
 
+        //добавление проигранной игры
         void incLostGames(){
             _lostGames++;
             _playedGames++;
         }
 
+        //получение количества выигранных игр
         int getWonGames(){
             return _wonGames;
         }
 
+        //получение количества проигранных игр
         int getLostGames(){
             return _lostGames;
         }
 
+        //получение количества игр
         int getPlayedGames(){
             return _playedGames;
         }
 
+        //вывод статистистики игрока
         void printStats(){
             cout << "Имя: " << getName() << endl;
             cout << "Кол-во побед: " << getWonGames() << endl;
@@ -747,12 +793,13 @@ class Player{
         }
 };
 
+//Класс Игра
 class Game{
     private:
-        Player *whitePlayer;
-        Player *blackPlayer;
-        Board *board;
-        Timer *timer;
+        Player *whitePlayer; //игрок 1
+        Player *blackPlayer; //игрок 2
+        Board *board; //доска
+        Timer *timer; //таймер
 
     public:
         Game(): board(new Board()){
@@ -767,6 +814,7 @@ class Game{
             blackPlayer = new Player(name2);
         };
 
+        //вывод результатов игры
         void printResults(int state){
             if (state == -1) cout << "Ничья!" << endl << endl;
             else if (state == 1) cout << "Белые победили!" << endl << endl;
@@ -778,12 +826,14 @@ class Game{
             timer->printTime();
         }
 
+        //вывод текущего цвета
         void printActive(){
             color active = board->getActive();
             if (active == color::white) cout << "white: " << whitePlayer->getName() << endl;
             else cout << "black: " << blackPlayer->getName() << endl;
         }
 
+        //запуск игры
         void play(){
             timer = new Timer();
             int state = 0, prevWrong = false;
@@ -804,6 +854,7 @@ class Game{
                             coordinates c2 = convert(s2);
                             if (c2.checkBound())
                                 state = board->movePiece(c1, c2);
+                            else prevWrong = true;
                         }
                     }
                 }
