@@ -62,6 +62,25 @@ struct coordinates{
         }
 };
 
+coordinates convert(string& str){
+    int x, y;
+    if (str.length() == 2){
+        x = toupper(str[0])-65;
+        y = str[1]-49;
+        if (x>=0 && x<=7 && y>=0 && y<=7)
+            return coordinates(x,y);
+        return coordinates(-1,-1);
+    }
+    return coordinates(8, 8);
+}
+
+string toString(coordinates coor){
+    string a;
+    a += coor.getX()+65;
+    a += coor.getY()+49;
+    return a;
+}
+
 //типы фигур
 enum class pieceType{
     king, //король
@@ -137,7 +156,7 @@ class Piece{
             return _isAlive;
         }
 
-        void printStats(){
+        void printInfo(){
             string type, color;
             switch (getType()){
                 case pieceType::bishop:
@@ -177,7 +196,7 @@ class Piece{
 
             cout << "Тип фигуры: " << type << endl;
             cout << "Цвет фигуры: " << color << endl;
-            cout << "Текущая позиция: " << getPos().getX() << getPos().getY() << endl;
+            cout << "Текущая позиция: " << toString(getPos()) << endl;
             cout << "Живой - " << isAlive() << endl;
         }
 };
@@ -462,6 +481,10 @@ class Square{
             return moves;
         }
 
+        void printInfo(){
+            cout << "Клетка " << toString(getPos()) << endl;
+            getPiece()->printInfo();
+        }
 };
 
 class Board{
@@ -574,6 +597,7 @@ class Board{
                     cout << "|" << endl;
                 }
                 cout << "  A  B  C  D  E  F  G  H" << endl;
+                getSquare(pos)->printInfo();
                 return true;
             }
             return false;
@@ -613,10 +637,10 @@ class Board{
             else return false;
         }
 
-        void movePiece(coordinates c1, coordinates c2){
+        int movePiece(coordinates c1, coordinates c2){
+            int state = 0;
             if (!sqHasPiece(c1)){
                 cout << "Поле пустое" << endl;
-                return;
             }
             vector<coordinates> moves = getMoves(c1);
             bool found = false;
@@ -627,27 +651,20 @@ class Board{
                 }
             }
             if (found){
+                if (sqHasPiece(c2) && getSqPiece(c2)->getType() == pieceType::king){
+                    if (activeColor == color::white) state = 1;
+                    else state = 2;
+                }
                 getSqPiece(c1)->incMoves();
                 getSquare(c2)->setPiece(getSqPiece(c1));
                 getSquare(c1)->removePiece();
                 changeActive();
             }
             else cout << "Фигура не может сюда пойти" << endl;
+            return state;
         }
 
 };
-
-coordinates convert(string& str){
-    int x, y;
-    if (str.length() == 2){
-        x = toupper(str[0])-65;
-        y = str[1]-49;
-        if (x>=0 && x<=7 && y>=0 && y<=7)
-            return coordinates(x,y);
-        return coordinates(-1,-1);
-    }
-    return coordinates(8, 8);
-}
 
 class Timer{
     private:
@@ -669,7 +686,7 @@ class Timer{
         }
 
         void printTime(){
-            cout << "Время игры: " << gameTime->tm_hour << ":" << gameTime->tm_min << ":" << gameTime->tm_sec << endl;
+            cout << "Время игры: " << gameTime->tm_hour-7 << ":" << gameTime->tm_min << ":" << gameTime->tm_sec << endl;
         }
 
 };
@@ -750,7 +767,10 @@ class Game{
             blackPlayer = new Player(name2);
         };
 
-        void printResults(){
+        void printResults(int state){
+            if (state == -1) cout << "Ничья!" << endl << endl;
+            else if (state == 1) cout << "Белые победили!" << endl << endl;
+            else if (state == 2) cout << "Черные победили!" << endl << endl;
             whitePlayer->printStats();
             cout << endl;
             blackPlayer->printStats();
@@ -766,7 +786,7 @@ class Game{
 
         void play(){
             timer = new Timer();
-            bool stop = false, prevWrong = false;
+            int state = 0, prevWrong = false;
             do{
                 system("clear");
                 printActive();
@@ -778,22 +798,29 @@ class Game{
                 if (c1.checkBound()){
                     if (board->sqHasPiece(c1) && board->checkOwner(c1)){
                         bool hasMoves = board->drawMoves(c1);
-                        board->getSqPiece(c1)->printStats();
                         if (hasMoves){
                             string s2;
                             cin >> s2;
                             coordinates c2 = convert(s2);
                             if (c2.checkBound())
-                                board->movePiece(c1, c2);
-                                
+                                state = board->movePiece(c1, c2);
                         }
                     }
                 }
-                else if (s1=="exit") stop = true;
+                else if (s1=="exit") state = -1;
                 else prevWrong = true;
-            }while (!stop);
+            }while (state == 0);
+            system("clear");
+            if (state == 1) {
+                whitePlayer->incWonGames();
+                blackPlayer->incLostGames();
+            }
+            else if (state == 2) {
+                blackPlayer->incWonGames();
+                whitePlayer->incLostGames();
+            }
             timer->stopTimer();
-            printResults();
+            printResults(state);
         }
 };
 
@@ -801,11 +828,4 @@ class Game{
 int main(){
     Game *chess = new Game();
     chess->play();
-    /* Piece *pawn = new Pawn();
-    pawn->printStats();
-
-    Piece *pawn1 = new Pawn(coordinates(1,2), color::black);
-    pawn1->printStats();
-    pawn1->setDead();
-    pawn1->printStats(); */
 }
