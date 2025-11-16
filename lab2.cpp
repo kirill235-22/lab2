@@ -332,7 +332,7 @@ class Rook: public Piece{
 //Класс Клетка
 class Square{
     private:
-        unique_ptr<Piece> _piece; //фигура на клетке
+        shared_ptr<Piece> _piece; //фигура на клетке
         coordinates _pos; //координаты клетки
 
     public:
@@ -341,27 +341,27 @@ class Square{
             switch (type)
             {
             case pieceType::bishop:
-                setPiece(make_unique<Bishop>(getPos(), col));
+                setPiece(make_shared<Bishop>(getPos(), col));
                 break;
             
             case pieceType::king:
-                setPiece(make_unique<King>(getPos(), col));
+                setPiece(make_shared<King>(getPos(), col));
                 break;
 
             case pieceType::knight:
-                setPiece(make_unique<Knight>(getPos(), col));
+                setPiece(make_shared<Knight>(getPos(), col));
                 break;
 
             case pieceType::pawn:
-                setPiece(make_unique<Pawn>(getPos(), col));
+                setPiece(make_shared<Pawn>(getPos(), col));
                 break;
 
             case pieceType::queen:
-                setPiece(make_unique<Queen>(getPos(), col));
+                setPiece(make_shared<Queen>(getPos(), col));
                 break;
 
             case pieceType::rook:
-                setPiece(make_unique<Rook>(getPos(), col));
+                setPiece(make_shared<Rook>(getPos(), col));
                 break;
 
             default:
@@ -376,15 +376,19 @@ class Square{
         }
 
         //поменять фигуру (при срубе или в конечной клетке)
-        void setPiece(unique_ptr<Piece> piece){
+        void setPiece(shared_ptr<Piece> piece){
             if (_piece!=nullptr) _piece->setDead();
             _piece = move(piece);
             _piece->setPos(getPos());
         }
 
         //какая фигура стоит на клетке
-        unique_ptr<Piece> getPiece(){
-            return move(_piece);
+        shared_ptr<Piece> getPiece(){
+            return _piece;
+        }
+
+        Piece* getPiecePtr(){
+            return _piece.get();
         }
 
         //убрать фигуру (при обычном ходе в начальной клетке)
@@ -409,12 +413,12 @@ class Square{
 
         //проверить наличие фигуры на клетке
         bool hasPiece(){
-            if (getPiece()!=nullptr) return true;
-            return false;
+            if (getPiece()==nullptr) return false;
+            return true;
         }
 
         //получить доступные для фигуры на клетке ходы
-        vector<coordinates> getMoves(unique_ptr<Square> board[8][8], color active){
+        vector<coordinates> getMoves(shared_ptr<Square> board[8][8], color active){
             vector<coordinates> moves;
             switch (board[getPos().getX()][getPos().getY()]->getPieceType()){
                 case pieceType::bishop:
@@ -439,7 +443,7 @@ class Square{
         }
 
         //получить продолжительные ходы
-        vector<coordinates> getContMoves(unique_ptr<Square> board[8][8], color active){
+        vector<coordinates> getContMoves(shared_ptr<Square> board[8][8], color active){
             vector<coordinates> moves, pattern;
             coordinates pos = getPos();
             pattern = getPiecePattern();
@@ -466,7 +470,7 @@ class Square{
         }
 
         //получить короткие ходы
-        vector<coordinates> getShortMoves(unique_ptr<Square> board[8][8], color active){
+        vector<coordinates> getShortMoves(shared_ptr<Square> board[8][8], color active){
             vector<coordinates> moves, pattern;
             coordinates pos = getPos();
             pattern = getPiecePattern();
@@ -481,7 +485,7 @@ class Square{
         }
         
         //получить ходы пешки
-        vector<coordinates> getPawnMoves(unique_ptr<Square> board[8][8], color active){
+        vector<coordinates> getPawnMoves(shared_ptr<Square> board[8][8], color active){
             vector<coordinates> moves, pattern;
             coordinates pos = getPos(), tpos, forward;
             pattern = getPiecePattern();
@@ -526,7 +530,7 @@ class Board{
             {pieceType::rook, pieceType::knight, pieceType::bishop, pieceType::king, pieceType::queen, pieceType::bishop, pieceType::knight, pieceType::rook},
         }; //шаблон заполнения доски
 
-        unique_ptr<Square> _board[8][8]; //доска
+        shared_ptr<Square> _board[8][8]; //доска
 
     public:
         Board(): _activeColor(color::white){
@@ -538,13 +542,13 @@ class Board{
             for (int y=0; y<=7; y++){
                 for (int x=0; x<=7; x++){
                     if (y<=1){
-                        _board[x][y]=make_unique<Square>(coordinates(x, y), _scheme[y][x], color::white);
+                        _board[x][y]=make_shared<Square>(coordinates(x, y), _scheme[y][x], color::white);
                     }
                     else if (y>=6){
-                        _board[x][y]=make_unique<Square>(coordinates(x, y), _scheme[y-4][x], color::black);
+                        _board[x][y]=make_shared<Square>(coordinates(x, y), _scheme[y-4][x], color::black);
                     }
                     else
-                        _board[x][y]=make_unique<Square>(coordinates(x, y));
+                        _board[x][y]=make_shared<Square>(coordinates(x, y));
                 }
             }
         }
@@ -554,40 +558,40 @@ class Board{
             for (int y=7; y>=0; y--){
                 cout << y+1;
                 for (int x=0; x<=7; x++){
-                    if (_board[x][y]->getPiece()!=nullptr){
-                        switch (_board[x][y]->getPiece()->getType()){
+                    if (_board[x][y].get()->hasPiece()){
+                        switch (_board[x][y].get()->getPiecePtr()->getType()){
                             case pieceType::pawn:
-                                if (_board[x][y]->getPiece()->getColor()==color::white)
+                                if (_board[x][y]->getPiecePtr()->getColor()==color::white)
                                     cout << u8"|\u2659 ";
                                 else cout << u8"|\u265F ";
                                 break;
                                 
                             case pieceType::rook:
-                                if (_board[x][y]->getPiece()->getColor()==color::white)
+                                if (_board[x][y]->getPiecePtr()->getColor()==color::white)
                                     cout << u8"|\u2656 ";
                                 else cout << u8"|\u265C ";
                                 break;
 
                             case pieceType::knight:
-                                if (_board[x][y]->getPiece()->getColor()==color::white)
+                                if (_board[x][y]->getPiecePtr()->getColor()==color::white)
                                     cout << u8"|\u2658 ";
                                 else cout << u8"|\u265E ";
                                 break;
 
                             case pieceType::bishop:
-                                if (_board[x][y]->getPiece()->getColor()==color::white)
+                                if (_board[x][y]->getPiecePtr()->getColor()==color::white)
                                     cout << u8"|\u2657 ";
                                 else cout << u8"|\u265D ";
                                 break;
 
                             case pieceType::king:
-                                if (_board[x][y]->getPiece()->getColor()==color::white)
+                                if (_board[x][y]->getPiecePtr()->getColor()==color::white)
                                     cout << u8"|\u2654 ";
                                 else cout << u8"|\u265A ";
                                 break;
 
                             case pieceType::queen:
-                                if (_board[x][y]->getPiece()->getColor()==color::white)
+                                if (_board[x][y]->getPiecePtr()->getColor()==color::white)
                                     cout << u8"|\u2655 ";
                                 else cout << u8"|\u265B ";
                                 break;
@@ -637,20 +641,20 @@ class Board{
         }
 
         //получение клетки по координатам
-        unique_ptr<Square> getSquare(coordinates pos){
-            return move(_board[pos.getX()][pos.getY()]);
+        Square* getSquare(coordinates pos){
+            return _board[pos.getX()][pos.getY()].get();
         }
 
         //проверка наличия фигуры на клетке
-        bool sqHasPiece(coordinates pos){
-            if (getSqPiece(pos)!=nullptr)
+        bool sqHasPiece(coordinates pos){ 
+            if (getSquare(pos)->hasPiece())
                 return true;
             return false;
         }
 
         //получение фигуры на клетке
-        unique_ptr<Piece> getSqPiece(coordinates pos){
-            return move(getSquare(pos)->getPiece());
+        shared_ptr<Piece> getSqPiece(coordinates pos){
+            return getSquare(pos)->getPiece();
         }
 
         //смена текущего цвета
@@ -797,10 +801,10 @@ class Player{
 //Класс Игра
 class Game{
     private:
-        unique_ptr<Player> whitePlayer; //игрок 1
-        unique_ptr<Player> blackPlayer; //игрок 2
-        unique_ptr<Board> board; //доска
-        unique_ptr<Timer> timer; //таймер
+        shared_ptr<Player> whitePlayer; //игрок 1
+        shared_ptr<Player> blackPlayer; //игрок 2
+        shared_ptr<Board> board; //доска
+        shared_ptr<Timer> timer; //таймер
 
     public:
         Game(): board(new Board()){
@@ -811,8 +815,8 @@ class Game{
             cout << "Введите имя 2 игрока: ";
             cin >> name2;
 
-            whitePlayer = make_unique<Player>(name1);
-            blackPlayer = make_unique<Player>(name2);
+            whitePlayer = make_shared<Player>(name1);
+            blackPlayer = make_shared<Player>(name2);
         };
 
         //вывод результатов игры
@@ -838,7 +842,7 @@ class Game{
 
         //запуск игры
         void play(){
-            timer = make_unique<Timer>();
+            timer = make_shared<Timer>();
             int state = 0, prevWrong = false;
             do{
                 system("clear");
@@ -880,6 +884,6 @@ class Game{
 
 
 int main(){
-    unique_ptr<Game> chess = make_unique<Game>();
+    shared_ptr<Game> chess = make_shared<Game>();
     chess->play();
 }
