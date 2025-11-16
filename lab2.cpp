@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <memory>
 
 using namespace std;
 
@@ -331,7 +332,7 @@ class Rook: public Piece{
 //Класс Клетка
 class Square{
     private:
-        Piece* _piece; //фигура на клетке
+        unique_ptr<Piece> _piece; //фигура на клетке
         coordinates _pos; //координаты клетки
 
     public:
@@ -340,27 +341,27 @@ class Square{
             switch (type)
             {
             case pieceType::bishop:
-                setPiece(new Bishop(getPos(), col));
+                setPiece(make_unique<Bishop>(getPos(), col));
                 break;
             
             case pieceType::king:
-                setPiece(new King(getPos(), col));
+                setPiece(make_unique<King>(getPos(), col));
                 break;
 
             case pieceType::knight:
-                setPiece(new Knight(getPos(), col));
+                setPiece(make_unique<Knight>(getPos(), col));
                 break;
 
             case pieceType::pawn:
-                setPiece(new Pawn(getPos(), col));
+                setPiece(make_unique<Pawn>(getPos(), col));
                 break;
 
             case pieceType::queen:
-                setPiece(new Queen(getPos(), col));
+                setPiece(make_unique<Queen>(getPos(), col));
                 break;
 
             case pieceType::rook:
-                setPiece(new Rook(getPos(), col));
+                setPiece(make_unique<Rook>(getPos(), col));
                 break;
 
             default:
@@ -375,15 +376,15 @@ class Square{
         }
 
         //поменять фигуру (при срубе или в конечной клетке)
-        void setPiece(Piece* piece){
+        void setPiece(unique_ptr<Piece> piece){
             if (_piece!=nullptr) _piece->setDead();
-            _piece = piece;
+            _piece = move(piece);
             _piece->setPos(getPos());
         }
 
         //какая фигура стоит на клетке
-        Piece* getPiece(){
-            return _piece;
+        unique_ptr<Piece> getPiece(){
+            return move(_piece);
         }
 
         //убрать фигуру (при обычном ходе в начальной клетке)
@@ -413,7 +414,7 @@ class Square{
         }
 
         //получить доступные для фигуры на клетке ходы
-        vector<coordinates> getMoves(Square* board[8][8], color active){
+        vector<coordinates> getMoves(unique_ptr<Square> board[8][8], color active){
             vector<coordinates> moves;
             switch (board[getPos().getX()][getPos().getY()]->getPieceType()){
                 case pieceType::bishop:
@@ -438,7 +439,7 @@ class Square{
         }
 
         //получить продолжительные ходы
-        vector<coordinates> getContMoves(Square* board[8][8], color active){
+        vector<coordinates> getContMoves(unique_ptr<Square> board[8][8], color active){
             vector<coordinates> moves, pattern;
             coordinates pos = getPos();
             pattern = getPiecePattern();
@@ -465,7 +466,7 @@ class Square{
         }
 
         //получить короткие ходы
-        vector<coordinates> getShortMoves(Square* board[8][8], color active){
+        vector<coordinates> getShortMoves(unique_ptr<Square> board[8][8], color active){
             vector<coordinates> moves, pattern;
             coordinates pos = getPos();
             pattern = getPiecePattern();
@@ -480,7 +481,7 @@ class Square{
         }
         
         //получить ходы пешки
-        vector<coordinates> getPawnMoves(Square* board[8][8], color active){
+        vector<coordinates> getPawnMoves(unique_ptr<Square> board[8][8], color active){
             vector<coordinates> moves, pattern;
             coordinates pos = getPos(), tpos, forward;
             pattern = getPiecePattern();
@@ -525,7 +526,7 @@ class Board{
             {pieceType::rook, pieceType::knight, pieceType::bishop, pieceType::king, pieceType::queen, pieceType::bishop, pieceType::knight, pieceType::rook},
         }; //шаблон заполнения доски
 
-        Square* _board[8][8]; //доска
+        unique_ptr<Square> _board[8][8]; //доска
 
     public:
         Board(): _activeColor(color::white){
@@ -537,13 +538,13 @@ class Board{
             for (int y=0; y<=7; y++){
                 for (int x=0; x<=7; x++){
                     if (y<=1){
-                        _board[x][y]=new Square(coordinates(x, y), _scheme[y][x], color::white);
+                        _board[x][y]=make_unique<Square>(coordinates(x, y), _scheme[y][x], color::white);
                     }
                     else if (y>=6){
-                        _board[x][y]=new Square(coordinates(x, y), _scheme[y-4][x], color::black);
+                        _board[x][y]=make_unique<Square>(coordinates(x, y), _scheme[y-4][x], color::black);
                     }
                     else
-                        _board[x][y]=new Square(coordinates(x, y));
+                        _board[x][y]=make_unique<Square>(coordinates(x, y));
                 }
             }
         }
@@ -636,8 +637,8 @@ class Board{
         }
 
         //получение клетки по координатам
-        Square* getSquare(coordinates pos){
-            return _board[pos.getX()][pos.getY()];
+        unique_ptr<Square> getSquare(coordinates pos){
+            return move(_board[pos.getX()][pos.getY()]);
         }
 
         //проверка наличия фигуры на клетке
@@ -648,8 +649,8 @@ class Board{
         }
 
         //получение фигуры на клетке
-        Piece* getSqPiece(coordinates pos){
-            return getSquare(pos)->getPiece();
+        unique_ptr<Piece> getSqPiece(coordinates pos){
+            return move(getSquare(pos)->getPiece());
         }
 
         //смена текущего цвета
@@ -703,7 +704,7 @@ class Board{
 class Timer{
     private:
         time_t startTime; //время начала игры
-        tm *gameTime; //длительность игры
+        tm* gameTime; //длительность игры
 
     public:
         Timer(){
@@ -796,10 +797,10 @@ class Player{
 //Класс Игра
 class Game{
     private:
-        Player *whitePlayer; //игрок 1
-        Player *blackPlayer; //игрок 2
-        Board *board; //доска
-        Timer *timer; //таймер
+        unique_ptr<Player> whitePlayer; //игрок 1
+        unique_ptr<Player> blackPlayer; //игрок 2
+        unique_ptr<Board> board; //доска
+        unique_ptr<Timer> timer; //таймер
 
     public:
         Game(): board(new Board()){
@@ -810,8 +811,8 @@ class Game{
             cout << "Введите имя 2 игрока: ";
             cin >> name2;
 
-            whitePlayer = new Player(name1);
-            blackPlayer = new Player(name2);
+            whitePlayer = make_unique<Player>(name1);
+            blackPlayer = make_unique<Player>(name2);
         };
 
         //вывод результатов игры
@@ -837,7 +838,7 @@ class Game{
 
         //запуск игры
         void play(){
-            timer = new Timer();
+            timer = make_unique<Timer>();
             int state = 0, prevWrong = false;
             do{
                 system("clear");
@@ -879,6 +880,6 @@ class Game{
 
 
 int main(){
-    Game *chess = new Game();
+    unique_ptr<Game> chess = make_unique<Game>();
     chess->play();
 }
