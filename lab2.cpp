@@ -824,6 +824,8 @@ class Game{
             blackPlayer->printStats();
             cout << endl;
             timer->printTime();
+            cout << "Финальная позиция: " << endl;
+            board->drawBoard();
         }
 
         //вывод текущего цвета
