@@ -17,6 +17,17 @@ struct coordinates{
         coordinates(): _x(0), _y(0){}
         coordinates(int x, int y): _x(x), _y(y){}
 
+        static coordinates setCoord(string str){
+            if (str.length() == 2){
+                int x = toupper(str[0])-'A';
+                int y = str[1]-'0'-1;
+                if (x>=0 && x<=7 && y>=0 && y<=7)
+                    return coordinates(x,y);
+                return coordinates(-1,-1);
+            }
+            return coordinates(8,8);
+        }
+
         int getX() { return _x; }; //получение координаты X
         int getY() { return _y; }; //получение координаты Y
 
@@ -58,6 +69,19 @@ struct coordinates{
             return *this;
         }
 
+        //перегрузка оператора <<
+        friend ostream& operator<<(std::ostream& os, const coordinates& c) {
+            return os << static_cast<char>('A'+c._x) << c._y+1;
+        }
+
+        //перегрузка оператора <<
+        friend istream& operator>>(std::istream& in, coordinates& c) {
+            string str;
+            in >> str;
+            c = setCoord(str);
+            return in;
+        }
+
         //проверка принадлежности координат доске
         bool checkBound(){
             if (this->_x < 0 || this->_x > BOARD_MAX_X || this->_y < 0 || this->_y > BOARD_MAX_Y)
@@ -70,21 +94,13 @@ struct coordinates{
 coordinates convert(string& str){
     int x, y;
     if (str.length() == 2){
-        x = toupper(str[0])-65;
+        x = toupper(str[0])-'A';
         y = str[1]-49;
         if (x>=0 && x<=7 && y>=0 && y<=7)
             return coordinates(x,y);
         return coordinates(-1,-1);
     }
     return coordinates(8, 8);
-}
-
-//преобразование координат в строку
-string toString(coordinates coor){
-    string a;
-    a += coor.getX()+65;
-    a += coor.getY()+49;
-    return a;
 }
 
 //типы фигур
@@ -208,7 +224,7 @@ class Piece{
 
             cout << "Тип фигуры: " << type << endl;
             cout << "Цвет фигуры: " << color << endl;
-            cout << "Текущая позиция: " << toString(getPos()) << endl;
+            cout << "Текущая позиция: " << getPos() << endl;
             cout << "Живой - " << isAlive() << endl;
         }
 };
@@ -514,7 +530,7 @@ class Square{
 
         //вывод информации о клетке и фигуре, стоящей на ней
         void printInfo(){
-            cout << "Клетка " << toString(getPos()) << endl;
+            cout << "Клетка " << getPos() << endl;
             getPiece()->printInfo();
         }
 };
@@ -774,6 +790,10 @@ class Player{
             _playedGames++;
         }
 
+        void incPlayedGames(){
+            _playedGames++;
+        }
+
         //получение количества выигранных игр
         int getWonGames(){
             return _wonGames;
@@ -850,15 +870,15 @@ class Game{
                 board->drawBoard();
                 if (prevWrong) cout << "Ошибка" << endl;
                 string s1;
-                cin >> s1;
-                coordinates c1 = convert(s1);
+                coordinates c1;
+                cin >> c1;
                 if (c1.checkBound()){
                     if (board->sqHasPiece(c1) && board->checkOwner(c1)){
                         bool hasMoves = board->drawMoves(c1);
                         if (hasMoves){
                             string s2;
-                            cin >> s2;
-                            coordinates c2 = convert(s2);
+                            coordinates c2;
+                            cin >> c2;
                             if (c2.checkBound())
                                 state = board->movePiece(c1, c2);
                             else prevWrong = true;
@@ -869,14 +889,23 @@ class Game{
                 else prevWrong = true;
             }while (state == 0);
             system("clear");
-            if (state == 1) {
-                whitePlayer->incWonGames();
-                blackPlayer->incLostGames();
+            switch(state){
+                case 1:
+                    whitePlayer->incWonGames();
+                    blackPlayer->incLostGames();
+                    break;
+
+                case 2:
+                    blackPlayer->incWonGames();
+                    whitePlayer->incLostGames();
+                    break;
+
+                case -1:
+                    whitePlayer->incPlayedGames();
+                    blackPlayer->incPlayedGames();
+                    break;
             }
-            else if (state == 2) {
-                blackPlayer->incWonGames();
-                whitePlayer->incLostGames();
-            }
+
             timer->stopTimer();
             printResults(state);
         }
