@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <memory>
 
 using namespace std;
 
@@ -15,6 +16,20 @@ struct coordinates{
     public:
         coordinates(): _x(0), _y(0){}
         coordinates(int x, int y): _x(x), _y(y){}
+
+        coordinates(const coordinates& c): _x(c._x), _y(c._y){}
+
+        static coordinates setCoord(string str){
+            if (str.length() == 2){
+                int x = toupper(str[0])-'A';
+                int y = str[1]-'0'-1;
+                if (x>=0 && x<=7 && y>=0 && y<=7)
+                    return coordinates(x,y);
+                return coordinates(-1,-1);
+            }
+            if (str=="exit") return coordinates(8,8);
+            return coordinates(-1,-1);
+        }
 
         int getX() { return _x; }; //получение координаты X
         int getY() { return _y; }; //получение координаты Y
@@ -57,6 +72,19 @@ struct coordinates{
             return *this;
         }
 
+        //перегрузка оператора <<
+        friend ostream& operator<<(std::ostream& os, const coordinates& c) {
+            return os << static_cast<char>('A'+c._x) << c._y+1;
+        }
+
+        //перегрузка оператора <<
+        friend istream& operator>>(std::istream& in, coordinates& c) {
+            string str;
+            in >> str;
+            c = setCoord(str);
+            return in;
+        }
+
         //проверка принадлежности координат доске
         bool checkBound(){
             if (this->_x < 0 || this->_x > BOARD_MAX_X || this->_y < 0 || this->_y > BOARD_MAX_Y)
@@ -69,21 +97,13 @@ struct coordinates{
 coordinates convert(string& str){
     int x, y;
     if (str.length() == 2){
-        x = toupper(str[0])-65;
+        x = toupper(str[0])-'A';
         y = str[1]-49;
         if (x>=0 && x<=7 && y>=0 && y<=7)
             return coordinates(x,y);
         return coordinates(-1,-1);
     }
     return coordinates(8, 8);
-}
-
-//преобразование координат в строку
-string toString(coordinates coor){
-    string a;
-    a += coor.getX()+65;
-    a += coor.getY()+49;
-    return a;
 }
 
 //типы фигур
@@ -207,7 +227,7 @@ class Piece{
 
             cout << "Тип фигуры: " << type << endl;
             cout << "Цвет фигуры: " << color << endl;
-            cout << "Текущая позиция: " << toString(getPos()) << endl;
+            cout << "Текущая позиция: " << getPos() << endl;
             cout << "Живой - " << isAlive() << endl;
         }
 };
@@ -331,7 +351,7 @@ class Rook: public Piece{
 //Класс Клетка
 class Square{
     private:
-        Piece* _piece; //фигура на клетке
+        shared_ptr<Piece> _piece; //фигура на клетке
         coordinates _pos; //координаты клетки
 
     public:
@@ -340,27 +360,27 @@ class Square{
             switch (type)
             {
             case pieceType::bishop:
-                setPiece(new Bishop(getPos(), col));
+                setPiece(make_shared<Bishop>(getPos(), col));
                 break;
             
             case pieceType::king:
-                setPiece(new King(getPos(), col));
+                setPiece(make_shared<King>(getPos(), col));
                 break;
 
             case pieceType::knight:
-                setPiece(new Knight(getPos(), col));
+                setPiece(make_shared<Knight>(getPos(), col));
                 break;
 
             case pieceType::pawn:
-                setPiece(new Pawn(getPos(), col));
+                setPiece(make_shared<Pawn>(getPos(), col));
                 break;
 
             case pieceType::queen:
-                setPiece(new Queen(getPos(), col));
+                setPiece(make_shared<Queen>(getPos(), col));
                 break;
 
             case pieceType::rook:
-                setPiece(new Rook(getPos(), col));
+                setPiece(make_shared<Rook>(getPos(), col));
                 break;
 
             default:
@@ -375,15 +395,19 @@ class Square{
         }
 
         //поменять фигуру (при срубе или в конечной клетке)
-        void setPiece(Piece* piece){
+        void setPiece(shared_ptr<Piece> piece){
             if (_piece!=nullptr) _piece->setDead();
-            _piece = piece;
+            _piece = move(piece);
             _piece->setPos(getPos());
         }
 
         //какая фигура стоит на клетке
-        Piece* getPiece(){
+        shared_ptr<Piece> getPiece(){
             return _piece;
+        }
+
+        Piece* getPiecePtr(){
+            return _piece.get();
         }
 
         //убрать фигуру (при обычном ходе в начальной клетке)
@@ -408,12 +432,12 @@ class Square{
 
         //проверить наличие фигуры на клетке
         bool hasPiece(){
-            if (getPiece()!=nullptr) return true;
-            return false;
+            if (getPiece()==nullptr) return false;
+            return true;
         }
 
         //получить доступные для фигуры на клетке ходы
-        vector<coordinates> getMoves(Square* board[8][8], color active){
+        vector<coordinates> getMoves(shared_ptr<Square> board[8][8], color active){
             vector<coordinates> moves;
             switch (board[getPos().getX()][getPos().getY()]->getPieceType()){
                 case pieceType::bishop:
@@ -422,11 +446,8 @@ class Square{
                     moves = getContMoves(board, active);
                     break;
 
-                case pieceType::king:
-                    moves = getShortMoves(board, active);
-                    break;
-
                 case pieceType::knight:
+                case pieceType::king:
                     moves = getShortMoves(board, active);
                     break;
 
@@ -438,7 +459,7 @@ class Square{
         }
 
         //получить продолжительные ходы
-        vector<coordinates> getContMoves(Square* board[8][8], color active){
+        vector<coordinates> getContMoves(shared_ptr<Square> board[8][8], color active){
             vector<coordinates> moves, pattern;
             coordinates pos = getPos();
             pattern = getPiecePattern();
@@ -465,7 +486,7 @@ class Square{
         }
 
         //получить короткие ходы
-        vector<coordinates> getShortMoves(Square* board[8][8], color active){
+        vector<coordinates> getShortMoves(shared_ptr<Square> board[8][8], color active){
             vector<coordinates> moves, pattern;
             coordinates pos = getPos();
             pattern = getPiecePattern();
@@ -480,7 +501,7 @@ class Square{
         }
         
         //получить ходы пешки
-        vector<coordinates> getPawnMoves(Square* board[8][8], color active){
+        vector<coordinates> getPawnMoves(shared_ptr<Square> board[8][8], color active){
             vector<coordinates> moves, pattern;
             coordinates pos = getPos(), tpos, forward;
             pattern = getPiecePattern();
@@ -509,7 +530,7 @@ class Square{
 
         //вывод информации о клетке и фигуре, стоящей на ней
         void printInfo(){
-            cout << "Клетка " << toString(getPos()) << endl;
+            cout << "Клетка " << getPos() << endl;
             getPiece()->printInfo();
         }
 };
@@ -525,7 +546,7 @@ class Board{
             {pieceType::rook, pieceType::knight, pieceType::bishop, pieceType::king, pieceType::queen, pieceType::bishop, pieceType::knight, pieceType::rook},
         }; //шаблон заполнения доски
 
-        Square* _board[8][8]; //доска
+        shared_ptr<Square> _board[8][8]; //доска
 
     public:
         Board(): _activeColor(color::white){
@@ -537,13 +558,13 @@ class Board{
             for (int y=0; y<=7; y++){
                 for (int x=0; x<=7; x++){
                     if (y<=1){
-                        _board[x][y]=new Square(coordinates(x, y), _scheme[y][x], color::white);
+                        _board[x][y]=make_shared<Square>(coordinates(x, y), _scheme[y][x], color::white);
                     }
                     else if (y>=6){
-                        _board[x][y]=new Square(coordinates(x, y), _scheme[y-4][x], color::black);
+                        _board[x][y]=make_shared<Square>(coordinates(x, y), _scheme[y-4][x], color::black);
                     }
                     else
-                        _board[x][y]=new Square(coordinates(x, y));
+                        _board[x][y]=make_shared<Square>(coordinates(x, y));
                 }
             }
         }
@@ -553,40 +574,40 @@ class Board{
             for (int y=7; y>=0; y--){
                 cout << y+1;
                 for (int x=0; x<=7; x++){
-                    if (_board[x][y]->getPiece()!=nullptr){
-                        switch (_board[x][y]->getPiece()->getType()){
+                    if (_board[x][y].get()->hasPiece()){
+                        switch (_board[x][y].get()->getPiecePtr()->getType()){
                             case pieceType::pawn:
-                                if (_board[x][y]->getPiece()->getColor()==color::white)
+                                if (_board[x][y]->getPiecePtr()->getColor()==color::white)
                                     cout << u8"|\u2659 ";
                                 else cout << u8"|\u265F ";
                                 break;
                                 
                             case pieceType::rook:
-                                if (_board[x][y]->getPiece()->getColor()==color::white)
+                                if (_board[x][y]->getPiecePtr()->getColor()==color::white)
                                     cout << u8"|\u2656 ";
                                 else cout << u8"|\u265C ";
                                 break;
 
                             case pieceType::knight:
-                                if (_board[x][y]->getPiece()->getColor()==color::white)
+                                if (_board[x][y]->getPiecePtr()->getColor()==color::white)
                                     cout << u8"|\u2658 ";
                                 else cout << u8"|\u265E ";
                                 break;
 
                             case pieceType::bishop:
-                                if (_board[x][y]->getPiece()->getColor()==color::white)
+                                if (_board[x][y]->getPiecePtr()->getColor()==color::white)
                                     cout << u8"|\u2657 ";
                                 else cout << u8"|\u265D ";
                                 break;
 
                             case pieceType::king:
-                                if (_board[x][y]->getPiece()->getColor()==color::white)
+                                if (_board[x][y]->getPiecePtr()->getColor()==color::white)
                                     cout << u8"|\u2654 ";
                                 else cout << u8"|\u265A ";
                                 break;
 
                             case pieceType::queen:
-                                if (_board[x][y]->getPiece()->getColor()==color::white)
+                                if (_board[x][y]->getPiecePtr()->getColor()==color::white)
                                     cout << u8"|\u2655 ";
                                 else cout << u8"|\u265B ";
                                 break;
@@ -637,18 +658,18 @@ class Board{
 
         //получение клетки по координатам
         Square* getSquare(coordinates pos){
-            return _board[pos.getX()][pos.getY()];
+            return _board[pos.getX()][pos.getY()].get();
         }
 
         //проверка наличия фигуры на клетке
-        bool sqHasPiece(coordinates pos){
-            if (getSqPiece(pos)!=nullptr)
+        bool sqHasPiece(coordinates pos){ 
+            if (getSquare(pos)->hasPiece())
                 return true;
             return false;
         }
 
         //получение фигуры на клетке
-        Piece* getSqPiece(coordinates pos){
+        shared_ptr<Piece> getSqPiece(coordinates pos){
             return getSquare(pos)->getPiece();
         }
 
@@ -703,7 +724,7 @@ class Board{
 class Timer{
     private:
         time_t startTime; //время начала игры
-        tm *gameTime; //длительность игры
+        tm* gameTime; //длительность игры
 
     public:
         Timer(){
@@ -769,6 +790,10 @@ class Player{
             _playedGames++;
         }
 
+        void incPlayedGames(){
+            _playedGames++;
+        }
+
         //получение количества выигранных игр
         int getWonGames(){
             return _wonGames;
@@ -796,10 +821,10 @@ class Player{
 //Класс Игра
 class Game{
     private:
-        Player *whitePlayer; //игрок 1
-        Player *blackPlayer; //игрок 2
-        Board *board; //доска
-        Timer *timer; //таймер
+        shared_ptr<Player> whitePlayer; //игрок 1
+        shared_ptr<Player> blackPlayer; //игрок 2
+        shared_ptr<Board> board; //доска
+        shared_ptr<Timer> timer; //таймер
 
     public:
         Game(): board(new Board()){
@@ -810,8 +835,8 @@ class Game{
             cout << "Введите имя 2 игрока: ";
             cin >> name2;
 
-            whitePlayer = new Player(name1);
-            blackPlayer = new Player(name2);
+            whitePlayer = make_shared<Player>(name1);
+            blackPlayer = make_shared<Player>(name2);
         };
 
         //вывод результатов игры
@@ -837,41 +862,48 @@ class Game{
 
         //запуск игры
         void play(){
-            timer = new Timer();
+            timer = make_shared<Timer>();
             int state = 0, prevWrong = false;
             do{
                 system("clear");
                 printActive();
                 board->drawBoard();
                 if (prevWrong) cout << "Ошибка" << endl;
-                string s1;
-                cin >> s1;
-                coordinates c1 = convert(s1);
+                coordinates c1;
+                cin >> c1;
                 if (c1.checkBound()){
                     if (board->sqHasPiece(c1) && board->checkOwner(c1)){
                         bool hasMoves = board->drawMoves(c1);
                         if (hasMoves){
-                            string s2;
-                            cin >> s2;
-                            coordinates c2 = convert(s2);
+                            coordinates c2;
+                            cin >> c2;
                             if (c2.checkBound())
                                 state = board->movePiece(c1, c2);
                             else prevWrong = true;
                         }
                     }
                 }
-                else if (s1=="exit") state = -1;
+                else if (c1==coordinates(8,8)) state = -1;
                 else prevWrong = true;
             }while (state == 0);
             system("clear");
-            if (state == 1) {
-                whitePlayer->incWonGames();
-                blackPlayer->incLostGames();
+            switch(state){
+                case 1:
+                    whitePlayer->incWonGames();
+                    blackPlayer->incLostGames();
+                    break;
+
+                case 2:
+                    blackPlayer->incWonGames();
+                    whitePlayer->incLostGames();
+                    break;
+
+                case -1:
+                    whitePlayer->incPlayedGames();
+                    blackPlayer->incPlayedGames();
+                    break;
             }
-            else if (state == 2) {
-                blackPlayer->incWonGames();
-                whitePlayer->incLostGames();
-            }
+
             timer->stopTimer();
             printResults(state);
         }
@@ -879,6 +911,6 @@ class Game{
 
 
 int main(){
-    Game *chess = new Game();
+    shared_ptr<Game> chess = make_shared<Game>();
     chess->play();
 }
