@@ -17,6 +17,8 @@ struct coordinates{
         coordinates(): _x(0), _y(0){}
         coordinates(int x, int y): _x(x), _y(y){}
 
+        coordinates(const coordinates& c): _x(c._x), _y(c._y){}
+
         static coordinates setCoord(string str){
             if (str.length() == 2){
                 int x = toupper(str[0])-'A';
@@ -25,7 +27,8 @@ struct coordinates{
                     return coordinates(x,y);
                 return coordinates(-1,-1);
             }
-            return coordinates(8,8);
+            if (str=="exit") return coordinates(8,8);
+            return coordinates(-1,-1);
         }
 
         int getX() { return _x; }; //получение координаты X
@@ -443,11 +446,8 @@ class Square{
                     moves = getContMoves(board, active);
                     break;
 
-                case pieceType::king:
-                    moves = getShortMoves(board, active);
-                    break;
-
                 case pieceType::knight:
+                case pieceType::king:
                     moves = getShortMoves(board, active);
                     break;
 
@@ -869,14 +869,12 @@ class Game{
                 printActive();
                 board->drawBoard();
                 if (prevWrong) cout << "Ошибка" << endl;
-                string s1;
                 coordinates c1;
                 cin >> c1;
                 if (c1.checkBound()){
                     if (board->sqHasPiece(c1) && board->checkOwner(c1)){
                         bool hasMoves = board->drawMoves(c1);
                         if (hasMoves){
-                            string s2;
                             coordinates c2;
                             cin >> c2;
                             if (c2.checkBound())
@@ -885,7 +883,7 @@ class Game{
                         }
                     }
                 }
-                else if (s1=="exit") state = -1;
+                else if (c1==coordinates(8,8)) state = -1;
                 else prevWrong = true;
             }while (state == 0);
             system("clear");
