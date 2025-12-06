@@ -111,16 +111,20 @@ enum class color{
 
 //Класс Фигура
 class Piece{
-    private:
+    protected:
         bool _isAlive = true; //состояние
         color _color; //цвет
-        pieceType _type; //тип
         coordinates _pos; //координаты
         int _moves = 0; //кол-во ходов фигуры
 
     public:
-        Piece(pieceType type): _pos(coordinates(0,0)), _color(color::white), _type(type){};
-        Piece(coordinates pos, color col, pieceType type): _pos(pos), _color(col), _type(type){};
+        Piece(): _pos(coordinates(0,0)), _color(color::white){};
+        Piece(coordinates pos, color col): _pos(pos), _color(col){};
+
+        virtual ~Piece() = default;
+
+        //метод клонирования
+        virtual shared_ptr<Piece> clone() const = 0;
 
         //установить координаты фигуры
         void setPos(coordinates pos){
@@ -159,9 +163,7 @@ class Piece{
         }
 
         //получить тип фигуры
-        pieceType getType(){
-            return _type;
-        }
+        virtual pieceType getType() const = 0;
 
         //пометка уничтожения фигуры
         void setDead(){
@@ -217,6 +219,14 @@ class Piece{
             cout << "Текущая позиция: " << getPos() << endl;
             cout << "Живой - " << isAlive() << endl;
         }
+
+        virtual string getDescription() const {
+            return "Шахматная фигура";
+        }
+
+        void printDescription() const {
+            cout << getDescription() << endl;
+        }
 };
 
 //Класс Пешка
@@ -231,8 +241,13 @@ class Pawn: public Piece{
         }; //шаблон хода, кроме первого
 
     public:
-        Pawn(): Piece(pieceType::pawn){}
-        Pawn(coordinates pos, color col): Piece(pos, col, pieceType::pawn){}
+        Pawn(): Piece(){}
+        Pawn(coordinates pos, color col): Piece(pos, col){}
+
+        pieceType getType() const override { return pieceType::pawn; }
+        shared_ptr<Piece> clone() const override {
+            return make_shared<Pawn>(*this);
+        }
         
         //получение шаблона передвижения
         vector<coordinates> getPattern() override{
@@ -250,8 +265,13 @@ class Bishop: public Piece{
         }; //шаблон хода
 
     public:
-        Bishop(): Piece(pieceType::bishop){};
-        Bishop(coordinates pos, color col): Piece(pos, col, pieceType::bishop){};
+        Bishop(): Piece(){};
+        Bishop(coordinates pos, color col): Piece(pos, col){};
+
+        pieceType getType() const override { return pieceType::bishop; }
+        shared_ptr<Piece> clone() const override {
+            return make_shared<Bishop>(*this);
+        }
 
         //получение шаблона передвижения
         vector<coordinates> getPattern() override{
@@ -269,8 +289,13 @@ class King: public Piece{
         }; //шаблон хода фигуры
 
     public:
-        King(): Piece(pieceType::king){};
-        King(coordinates pos, color col): Piece(pos, col, pieceType::king){};
+        King(): Piece(){};
+        King(coordinates pos, color col): Piece(pos, col){};
+
+        pieceType getType() const override { return pieceType::king; }
+        shared_ptr<Piece> clone() const override {
+            return make_shared<King>(*this);
+        }
 
         //получение шаблона передвижения
         vector<coordinates> getPattern() override{
@@ -289,8 +314,13 @@ class Knight: public Piece{
         }; //шаблон хода фигуры
 
     public:
-        Knight(): Piece(pieceType::knight){};
-        Knight(coordinates pos, color col): Piece(pos, col, pieceType::knight){};
+        Knight(): Piece(){};
+        Knight(coordinates pos, color col): Piece(pos, col){};
+
+        pieceType getType() const override { return pieceType::knight; }
+        shared_ptr<Piece> clone() const override {
+            return make_shared<Knight>(*this);
+        }
 
         //получение шаблона передвижения
         vector<coordinates> getPattern() override{
@@ -308,8 +338,13 @@ class Queen: public Piece{
         }; //шаблон хода фигуры
 
     public:
-        Queen(): Piece(pieceType::queen){};
-        Queen(coordinates pos, color col): Piece(pos, col, pieceType::queen){};
+        Queen(): Piece(){};
+        Queen(coordinates pos, color col): Piece(pos, col){};
+
+        pieceType getType() const override { return pieceType::queen; }
+        shared_ptr<Piece> clone() const override {
+            return make_shared<Queen>(*this);
+        }
 
         //получение шаблона передвижения
         vector<coordinates> getPattern() override{
@@ -326,8 +361,13 @@ class Rook: public Piece{
         }; //шаблон хода фигуры
 
     public:
-        Rook(): Piece(pieceType::rook){};
-        Rook(coordinates pos, color col): Piece(pos, col, pieceType::rook){};
+        Rook(): Piece(){};
+        Rook(coordinates pos, color col): Piece(pos, col){};
+
+        pieceType getType() const override { return pieceType::rook; }
+        shared_ptr<Piece> clone() const override {
+            return make_shared<Rook>(*this);
+        }
 
         //получение шаблона передвижения
         vector<coordinates> getPattern() override{
@@ -657,7 +697,8 @@ class Board{
 
         //получение фигуры на клетке
         shared_ptr<Piece> getSqPiece(coordinates pos){
-            return getSquare(pos)->getPiece();
+            auto p = getSquare(pos)->getPiecePtr();
+            return p ? p->clone() : nullptr;
         }
 
         //смена текущего цвета
@@ -697,7 +738,9 @@ class Board{
                     else state = 2;
                 }
                 getSqPiece(c1)->incMoves();
-                getSquare(c2)->setPiece(getSqPiece(c1));
+                auto piece = getSqPiece(c1);
+                getSquare(c2)->setPiece(piece);
+                getSquare(c1)->removePiece();
                 getSquare(c1)->removePiece();
                 changeActive();
             }
