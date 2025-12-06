@@ -219,6 +219,14 @@ class Piece{
             cout << "Текущая позиция: " << getPos() << endl;
             cout << "Живой - " << isAlive() << endl;
         }
+
+        virtual string getDescription() const {
+            return "Шахматная фигура";
+        }
+
+        void printDescription() const {
+            cout << getDescription() << endl;
+        }
 };
 
 //Класс Пешка
