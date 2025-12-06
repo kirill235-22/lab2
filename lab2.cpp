@@ -121,7 +121,7 @@ class Piece{
         Piece(): _pos(coordinates(0,0)), _color(color::white){};
         Piece(coordinates pos, color col): _pos(pos), _color(col){};
 
-        virtual ~Piece();
+        virtual ~Piece() = default;
 
         //метод клонирования
         virtual shared_ptr<Piece> clone() const = 0;
@@ -244,9 +244,6 @@ class Pawn: public Piece{
         Pawn(): Piece(){}
         Pawn(coordinates pos, color col): Piece(pos, col){}
 
-        Pawn(const Pawn&) = delete;
-        Pawn& operator=(const Pawn&) = delete;
-
         pieceType getType() const override { return pieceType::pawn; }
         shared_ptr<Piece> clone() const override {
             return make_shared<Pawn>(*this);
@@ -271,9 +268,6 @@ class Bishop: public Piece{
         Bishop(): Piece(){};
         Bishop(coordinates pos, color col): Piece(pos, col){};
 
-        Bishop(const Bishop&) = delete;
-        Bishop& operator=(const Bishop&) = delete;
-
         pieceType getType() const override { return pieceType::bishop; }
         shared_ptr<Piece> clone() const override {
             return make_shared<Bishop>(*this);
@@ -297,9 +291,6 @@ class King: public Piece{
     public:
         King(): Piece(){};
         King(coordinates pos, color col): Piece(pos, col){};
-
-        King(const King&) = delete;
-        King& operator=(const King&) = delete;
 
         pieceType getType() const override { return pieceType::king; }
         shared_ptr<Piece> clone() const override {
@@ -326,10 +317,7 @@ class Knight: public Piece{
         Knight(): Piece(){};
         Knight(coordinates pos, color col): Piece(pos, col){};
 
-        Knight(const Knight&) = delete;
-        Knight& operator=(const Knight&) = delete;
-
-        pieceType getType() const override { return pieceType::pawn; }
+        pieceType getType() const override { return pieceType::knight; }
         shared_ptr<Piece> clone() const override {
             return make_shared<Knight>(*this);
         }
@@ -353,10 +341,7 @@ class Queen: public Piece{
         Queen(): Piece(){};
         Queen(coordinates pos, color col): Piece(pos, col){};
 
-        Queen(const Queen&) = delete;
-        Queen& operator=(const Queen&) = delete;
-
-        pieceType getType() const override { return pieceType::pawn; }
+        pieceType getType() const override { return pieceType::queen; }
         shared_ptr<Piece> clone() const override {
             return make_shared<Queen>(*this);
         }
@@ -379,10 +364,7 @@ class Rook: public Piece{
         Rook(): Piece(){};
         Rook(coordinates pos, color col): Piece(pos, col){};
 
-        Rook(const Rook&) = delete;
-        Rook& operator=(const Rook&) = delete;
-
-        pieceType getType() const override { return pieceType::pawn; }
+        pieceType getType() const override { return pieceType::rook; }
         shared_ptr<Piece> clone() const override {
             return make_shared<Rook>(*this);
         }
