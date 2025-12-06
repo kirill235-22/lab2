@@ -715,7 +715,8 @@ class Board{
 
         //получение фигуры на клетке
         shared_ptr<Piece> getSqPiece(coordinates pos){
-            return getSquare(pos)->getPiece();
+            auto p = getSquare(pos)->getPiecePtr();
+            return p ? p->clone() : nullptr;
         }
 
         //смена текущего цвета
@@ -755,7 +756,9 @@ class Board{
                     else state = 2;
                 }
                 getSqPiece(c1)->incMoves();
-                getSquare(c2)->setPiece(getSqPiece(c1));
+                auto piece = getSqPiece(c1);
+                getSquare(c2)->setPiece(piece);
+                getSquare(c1)->removePiece();
                 getSquare(c1)->removePiece();
                 changeActive();
             }
