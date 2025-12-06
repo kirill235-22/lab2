@@ -19,7 +19,7 @@ struct coordinates{
 
         coordinates(const coordinates& c): _x(c._x), _y(c._y){}
 
-        static coordinates setCoord(string str){
+        static coordinates toCoord(string str){
             if (str.length() == 2){
                 int x = toupper(str[0])-'A';
                 int y = str[1]-'0'-1;
@@ -77,11 +77,11 @@ struct coordinates{
             return os << static_cast<char>('A'+c._x) << c._y+1;
         }
 
-        //перегрузка оператора <<
+        //перегрузка оператора >>
         friend istream& operator>>(std::istream& in, coordinates& c) {
             string str;
             in >> str;
-            c = setCoord(str);
+            c = toCoord(str);
             return in;
         }
 
@@ -92,19 +92,6 @@ struct coordinates{
             return true;
         }
 };
-
-//преобразование строки в координаты
-coordinates convert(string& str){
-    int x, y;
-    if (str.length() == 2){
-        x = toupper(str[0])-'A';
-        y = str[1]-49;
-        if (x>=0 && x<=7 && y>=0 && y<=7)
-            return coordinates(x,y);
-        return coordinates(-1,-1);
-    }
-    return coordinates(8, 8);
-}
 
 //типы фигур
 enum class pieceType{
