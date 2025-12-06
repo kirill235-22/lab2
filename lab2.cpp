@@ -111,16 +111,20 @@ enum class color{
 
 //Класс Фигура
 class Piece{
-    private:
+    protected:
         bool _isAlive = true; //состояние
         color _color; //цвет
-        pieceType _type; //тип
         coordinates _pos; //координаты
         int _moves = 0; //кол-во ходов фигуры
 
     public:
-        Piece(pieceType type): _pos(coordinates(0,0)), _color(color::white), _type(type){};
-        Piece(coordinates pos, color col, pieceType type): _pos(pos), _color(col), _type(type){};
+        Piece(): _pos(coordinates(0,0)), _color(color::white){};
+        Piece(coordinates pos, color col): _pos(pos), _color(col){};
+
+        virtual ~Piece();
+
+        //метод клонирования
+        virtual shared_ptr<Piece> clone() const = 0;
 
         //установить координаты фигуры
         void setPos(coordinates pos){
@@ -159,9 +163,7 @@ class Piece{
         }
 
         //получить тип фигуры
-        pieceType getType(){
-            return _type;
-        }
+        virtual pieceType getType() = 0;
 
         //пометка уничтожения фигуры
         void setDead(){
